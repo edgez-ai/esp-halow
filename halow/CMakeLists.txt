@@ -135,6 +135,22 @@ idf_component_register(
 	${priv_reqs}
 )
 
+if(EDGEZ_HALOW_MESH_SOURCE_BUILD)
+    idf_build_set_property(LINK_OPTIONS
+        "-Wl,--allow-multiple-definition" APPEND)
+    target_compile_definitions(${COMPONENT_TARGET} PRIVATE
+        EDGEZ_MORSE_PUBLIC_ADAPTER=1
+        EDGEZ_FULL_HOSTAP_RUNTIME=1
+        EDGEZ_DIAGNOSTICS_ENABLED=1)
+    # The source checkout carries the complete HaLow Hostap implementation,
+    # while ESP-IDF also links its 2.4 GHz supplicant for the optional gateway.
+    # Both trees retain upstream public symbol names. The protected release
+    # archives are post-processed; source-debug builds need the equivalent
+    # linker tolerance so each caller resolves against its own archive first.
+    target_link_options(${COMPONENT_TARGET} PUBLIC
+        "LINKER:--allow-multiple-definition")
+endif()
+
 add_subdirectory(components)
 if(CONFIG_HALOW_MESH_DEBUG_LOG)
     # The application-facing Kconfig name is intentionally vendor neutral;

@@ -7,7 +7,9 @@
 	url = https://github.com/MorseMicro/morse-firmware
 [submodule "halow/components/edgez-rf-morsemicro"]
 	path = halow/components/edgez-rf-morsemicro
-	url = git@github.com:edgez-ai/edgez-rf-morsemicro.git
+	url = https://github.com/edgez-ai/edgez-rf-morsemicro.git
+	branch = main
 [submodule "halow/components/edgez-rf-api"]
 	path = halow/components/edgez-rf-api
-	url = git@github.com:edgez-ai/edgez-rf-api.git
+	url = https://github.com/edgez-ai/edgez-rf-api.git
+	branch = main

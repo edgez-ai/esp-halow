@@ -141,7 +141,7 @@ endif()
 # execute ESP-IDF's normal custom command. Seed the two files at configure time
 # so dependency scanning sees real paths; target_add_binary_data still owns the
 # normal incremental regeneration rule.
-function(morsefirmware_seed_embed_assembly blob variable_basename)
+function(morsefirmware_seed_embed_assembly blob variable_basename out_var)
     idf_build_get_property(build_dir BUILD_DIR)
     idf_build_get_property(idf_path IDF_PATH)
     get_filename_component(blob_name "${blob}" NAME)
@@ -154,11 +154,10 @@ function(morsefirmware_seed_embed_assembly blob variable_basename)
             -D "FILE_TYPE=BINARY"
             -P "${idf_path}/tools/cmake/scripts/data_file_embed_asm.cmake"
         COMMAND_ERROR_IS_FATAL ANY)
+    set(${out_var} "${assembly}" PARENT_SCOPE)
 endfunction()
 
-morsefirmware_seed_embed_assembly("${FW_MBIN}" firmware_binary)
-morsefirmware_seed_embed_assembly("${BCF_MBIN}" bcf_binary)
+morsefirmware_seed_embed_assembly("${FW_MBIN}" firmware_binary FW_ASSEMBLY)
+morsefirmware_seed_embed_assembly("${BCF_MBIN}" bcf_binary BCF_ASSEMBLY)
 
-add_library(morsefirmware STATIC)
-target_add_binary_data(morsefirmware "${FW_MBIN}"  BINARY RENAME_TO firmware_binary)
-target_add_binary_data(morsefirmware "${BCF_MBIN}" BINARY RENAME_TO bcf_binary)
+add_library(morsefirmware STATIC "${FW_ASSEMBLY}" "${BCF_ASSEMBLY}")

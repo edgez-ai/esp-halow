@@ -77,7 +77,9 @@ if(EDGEZ_RF_ONLY_MODE)
         ${MM_IOT_SDK}/framework/morselib/include)
 endif()
 if(CONFIG_HALOW_MESH_MODE)
-    target_include_directories(shims PUBLIC ${MM_IOT_EDGEZ_INCLUDE_DIRS})
+    target_include_directories(shims PUBLIC
+        ${MM_IOT_EDGEZ_INCLUDE_DIRS}
+        ${EDGEZ_RF_API_INCLUDE_DIRS})
     if(NOT EDGEZ_HALOW_MESH_SOURCE_BUILD)
         target_link_libraries(shims PUBLIC edgez_halow_mesh_core)
     endif()

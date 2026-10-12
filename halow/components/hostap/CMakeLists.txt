@@ -25,7 +25,7 @@ set(EDGEZ_SAE_INC
     ${MM_IOT_SDK}/framework/morselib/include
 )
 
-if(CONFIG_DAB_RAW_RF_TEST OR EDGEZ_HALOW_MESH_SOURCE_BUILD)
+if(CONFIG_DAB_RAW_RF_TEST)
     set(EDGEZ_SAE_SRCS
         ${ROOT_DIR}/os_mmosal.c
         ${ROOT_DIR}/src/common/dragonfly.c
@@ -39,10 +39,15 @@ if(CONFIG_DAB_RAW_RF_TEST OR EDGEZ_HALOW_MESH_SOURCE_BUILD)
         ${ROOT_DIR}/src/utils/common.c
         ${ROOT_DIR}/src/utils/wpabuf.c
     )
-    if(EDGEZ_HALOW_MESH_SOURCE_BUILD)
-        list(PREPEND EDGEZ_SAE_SRCS
-            ${EDGEZ_HALOW_MESH_SOURCE_ROOT}/ports/esp_idf/src/edgez_mesh_sae_provider.c)
-    endif()
+elseif(EDGEZ_HALOW_MESH_SOURCE_BUILD)
+    # The complete Hostap implementation is built below as mmhostap. Compile
+    # only the EdgeZ provider here to avoid building the same Hostap sources
+    # twice with different definitions under PlatformIO.
+    set(EDGEZ_SAE_SRCS
+        ${EDGEZ_HALOW_MESH_SOURCE_ROOT}/ports/esp_idf/src/edgez_mesh_sae_provider.c)
+endif()
+
+if(CONFIG_DAB_RAW_RF_TEST OR EDGEZ_HALOW_MESH_SOURCE_BUILD)
     add_library(edgez_mesh_sae STATIC ${EDGEZ_SAE_SRCS})
     target_include_directories(edgez_mesh_sae PUBLIC ${EDGEZ_SAE_INC})
 else()
@@ -86,6 +91,8 @@ if(CONFIG_DAB_RAW_RF_TEST)
     return()
 endif()
 
+idf_build_get_property(EDGEZ_HOSTAP_ARCH IDF_TARGET_ARCH)
+
 set(INC
     ${ROOT_DIR}/..
     ${ROOT_DIR}
@@ -96,6 +103,8 @@ set(INC
     ${ROOT_DIR}/src/crypto
     ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/include
     ${EDGEZ_RF_API_INCLUDE_DIRS}
+    ${MM_IOT_SDK}/framework/morselib/include
+    ${CMAKE_CURRENT_LIST_DIR}/../shims/include/${EDGEZ_HOSTAP_ARCH}
 )
 
 set(SRCS
@@ -286,3 +295,12 @@ target_compile_options(mmhostap PRIVATE "-Wno-address")
 add_dependencies(mmhostap idf::mbedtls)
 target_link_libraries(mmhostap PUBLIC
     mmutils idf::mbedtls)
+if(EDGEZ_HALOW_MESH_SOURCE_BUILD)
+    target_compile_definitions(edgez_mesh_sae PRIVATE
+        EDGEZ_MORSE_PUBLIC_ADAPTER=1
+        EDGEZ_FULL_HOSTAP_RUNTIME=1)
+    target_compile_definitions(mmhostap PRIVATE
+        EDGEZ_MORSE_PUBLIC_ADAPTER=1
+        EDGEZ_FULL_HOSTAP_RUNTIME=1)
+    target_link_libraries(edgez_mesh_sae PUBLIC mmhostap)
+endif()
