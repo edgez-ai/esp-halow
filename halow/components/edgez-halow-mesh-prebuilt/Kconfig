@@ -1,0 +1,125 @@
+# Copyright 2026 EdgeZeron AI AB. All rights reserved.
+# Licensed under the EdgeZ Commercial Software License.
+
+menu "EdgeZ HaLow mesh"
+
+    choice HALOW_TRANSPORT
+        prompt "Morse Micro transport"
+        default HALOW_TRANSPORT_SPI
+
+        config HALOW_TRANSPORT_SPI
+            bool "SDIO over SPI"
+
+        config HALOW_TRANSPORT_USB
+            bool "MM8108 USB"
+            depends on IDF_TARGET_ESP32P4
+            depends on MM_CHIP_MM8108
+    endchoice
+
+    if HALOW_TRANSPORT_USB
+
+        config HALOW_USB_HOST_PERIPHERAL
+            int "ESP32-P4 USB host peripheral"
+            range 0 1
+            default 0
+
+        config HALOW_USB_DEVICE_TIMEOUT_MS
+            int "MM8108 enumeration timeout (milliseconds, 0 waits forever)"
+            range 0 600000
+            default 0
+
+        config HALOW_USB_CLIENT_TASK_STACK_SIZE
+            int "MM8108 USB client task stack size"
+            range 4096 16384
+            default 6144
+
+        config HALOW_USB_CLIENT_TASK_PRIORITY
+            int "MM8108 USB client task priority"
+            range 1 24
+            default 8
+
+        config HALOW_USB_HOST_TASK_STACK_SIZE
+            int "USB host daemon task stack size"
+            range 3072 16384
+            default 4096
+
+        config HALOW_USB_HOST_TASK_PRIORITY
+            int "USB host daemon task priority"
+            range 1 24
+            default 5
+
+        config HALOW_USB_DEBUG_LOG
+            bool "Enable USB host enumeration diagnostics"
+            default n
+
+    endif
+
+    config HALOW_RF_DEBUG_LOG
+        bool "Enable Morse RF/firmware command trace logging"
+        default n
+
+    config HALOW_MAC_DEBUG_LOG
+        bool "Enable Morse 802.11 MAC frame trace logging"
+        default n
+
+    config HALOW_MESH_MODE
+        bool "Enable experimental 802.11s HaLow mesh support"
+        default n
+        help
+            Compile the EdgeZ 802.11s SAE/AMPE/MPM mesh extensions. The
+            application enables mesh for a station profile by setting
+            mmwlan_sta_args.mesh_mode before connecting.
+
+    if HALOW_MESH_MODE
+
+        config HALOW_MESH_PREQ_INTERVAL_MS
+            int "Proactive HWMP PREQ interval (milliseconds, 0 disables)"
+            range 0 600000
+            default 4000
+
+        config HALOW_MESH_DEBUG_LOG
+            bool "Enable verbose mesh trace logging"
+            default n
+
+        config HALOW_EDGEZ_PRIVATE_PEERING_AUTHORITY
+            bool "Let the private EdgeZ FSM own secure mesh peering decisions"
+            default n
+            help
+                Keep SAE/AMPE cryptography and frame validation in the vendored
+                BSD hostap layer, but route validated peer events to the private
+                EdgeZ FSM and execute only its MPM decisions. Leave disabled
+                until the target peer interoperability test has passed.
+
+        config HALOW_EDGEZ_PRIVATE_UMAC_CALLBACK_SHADOW
+            bool "Observe live Morse RX/TX callbacks in the private UMAC"
+            default y
+            help
+                Borrow live driver RX, TX-status, flow-control, restart, and
+                scan-completion events into the private EdgeZ UMAC while the
+                reference Morse UMAC retains ownership and still processes
+                every event. This validates the callback boundary before the
+                private data path becomes authoritative.
+
+        config HALOW_EDGEZ_BATMAN
+            bool "Enable EdgeZ BATMAN-IV mesh data plane"
+            default y
+
+        config HALOW_EDGEZ_MQTT_RELAY
+            bool "Enable EdgeZ MQTT relay over BATMAN-IV"
+            depends on HALOW_EDGEZ_BATMAN
+            default y
+
+        config HALOW_EDGEZ_BATMAN_INTERVAL_MS
+            int "BATMAN-IV originator interval (milliseconds)"
+            depends on HALOW_EDGEZ_BATMAN
+            range 250 60000
+            default 10000
+
+        config HALOW_EDGEZ_MEMORY_DIAGNOSTICS
+            bool "Check mesh forwarding heap and stack at runtime"
+            depends on HALOW_EDGEZ_BATMAN
+            default n
+
+    endif
+
+endmenu

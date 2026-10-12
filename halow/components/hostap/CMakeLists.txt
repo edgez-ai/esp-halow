@@ -1,7 +1,90 @@
 # Copyright 2026 Morse Micro
 # SPDX-License-Identifier: Apache-2.0
 
-set(ROOT_DIR ${MM_IOT_SDK}/framework/src/hostap)
+set(PUBLIC_ROOT_DIR ${MM_IOT_SDK}/framework/src/hostap)
+set(ROOT_DIR ${PUBLIC_ROOT_DIR})
+
+if(CONFIG_HALOW_MESH_MODE AND NOT TARGET edgez_halow_mesh_platform)
+    if(NOT DEFINED EDGEZ_HOSTAP_ROOT OR
+       NOT EXISTS "${EDGEZ_HOSTAP_ROOT}/wpa_supplicant/mesh.c")
+        message(FATAL_ERROR
+            "EdgeZ mesh mode requires the public Hostap mesh sources")
+    endif()
+    set(ROOT_DIR ${EDGEZ_HOSTAP_ROOT})
+    message(STATUS "Using public Hostap sources with the EdgeZ adapter: ${ROOT_DIR}")
+endif()
+
+set(EDGEZ_SAE_INC
+    ${ROOT_DIR}/..
+    ${ROOT_DIR}
+    ${ROOT_DIR}/src
+    ${ROOT_DIR}/src/common
+    ${ROOT_DIR}/src/utils
+    ${ROOT_DIR}/src/crypto
+    ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/include
+    ${MM_IOT_SDK}/framework/morselib/include
+)
+
+if(CONFIG_DAB_RAW_RF_TEST OR EDGEZ_HALOW_MESH_SOURCE_BUILD)
+    set(EDGEZ_SAE_SRCS
+        ${ROOT_DIR}/os_mmosal.c
+        ${ROOT_DIR}/src/common/dragonfly.c
+        ${ROOT_DIR}/src/common/sae.c
+        ${ROOT_DIR}/src/crypto/aes-ctr.c
+        ${ROOT_DIR}/src/crypto/aes-siv.c
+        ${ROOT_DIR}/src/crypto/dh_groups.c
+        ${ROOT_DIR}/src/crypto/sha256-kdf.c
+        ${ROOT_DIR}/src/crypto/sha384-kdf.c
+        ${ROOT_DIR}/src/crypto/sha512-kdf.c
+        ${ROOT_DIR}/src/utils/common.c
+        ${ROOT_DIR}/src/utils/wpabuf.c
+    )
+    if(EDGEZ_HALOW_MESH_SOURCE_BUILD)
+        list(PREPEND EDGEZ_SAE_SRCS
+            ${EDGEZ_HALOW_MESH_SOURCE_ROOT}/ports/esp_idf/src/edgez_mesh_sae_provider.c)
+    endif()
+    add_library(edgez_mesh_sae STATIC ${EDGEZ_SAE_SRCS})
+    target_include_directories(edgez_mesh_sae PUBLIC ${EDGEZ_SAE_INC})
+else()
+    add_library(edgez_mesh_sae INTERFACE)
+endif()
+if(CONFIG_DAB_RAW_RF_TEST OR EDGEZ_HALOW_MESH_SOURCE_BUILD)
+    set(EDGEZ_SAE_SCOPE PUBLIC)
+else()
+    set(EDGEZ_SAE_SCOPE INTERFACE)
+endif()
+target_compile_definitions(edgez_mesh_sae ${EDGEZ_SAE_SCOPE}
+    CONFIG_SAE=1
+    CONFIG_ECC=1
+    CONFIG_SHA256=1
+    CONFIG_SHA384=1
+    CONFIG_SHA512=1
+    CONFIG_FIPS=1
+    CONFIG_NO_STDOUT_DEBUG=1
+    OS_NO_C_LIB_DEFINES=1
+    MM_IOT
+)
+if(CONFIG_DAB_RAW_RF_TEST OR EDGEZ_HALOW_MESH_SOURCE_BUILD)
+    target_compile_definitions(edgez_mesh_sae PRIVATE
+        ENABLE_HOSTAP_CRYPTO_API_MANGLING=1)
+    target_compile_options(edgez_mesh_sae PRIVATE
+        "-Wno-c++-compat"
+        "-Wno-unused-function"
+        "-Wno-unused-parameter"
+        "-Wno-sign-compare"
+    )
+    add_dependencies(edgez_mesh_sae shims idf::mbedtls)
+    target_link_libraries(edgez_mesh_sae PUBLIC
+        shims mmutils edgez_umac_runtime idf::mbedtls)
+else()
+    target_link_libraries(edgez_mesh_sae INTERFACE
+        edgez_halow_mesh_platform)
+endif()
+unset(EDGEZ_SAE_SCOPE)
+
+if(CONFIG_DAB_RAW_RF_TEST)
+    return()
+endif()
 
 set(INC
     ${ROOT_DIR}/..
@@ -11,6 +94,8 @@ set(INC
     ${ROOT_DIR}/src/utils
     ${ROOT_DIR}/wpa_supplicant
     ${ROOT_DIR}/src/crypto
+    ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/include
+    ${EDGEZ_RF_API_INCLUDE_DIRS}
 )
 
 set(SRCS
@@ -63,7 +148,7 @@ set(SRCS
     ${ROOT_DIR}/morse_stubs.c
 )
 
-if(CONFIG_HALOW_AP_MODE)
+if(CONFIG_HALOW_AP_MODE OR CONFIG_HALOW_MESH_MODE)
     list(APPEND SRCS
         ${ROOT_DIR}/wpa_supplicant/ap.c
         ${ROOT_DIR}/src/ap/authsrv.c
@@ -99,6 +184,22 @@ if(CONFIG_HALOW_AP_MODE)
         ${ROOT_DIR}/src/eapol_auth/eapol_auth_sm.c
         ${ROOT_DIR}/src/eap_server/eap_server.c
         ${ROOT_DIR}/src/eap_server/eap_server_methods.c
+    )
+endif()
+
+if(CONFIG_HALOW_MESH_MODE AND NOT TARGET edgez_halow_mesh_platform)
+    if(NOT EXISTS "${ROOT_DIR}/morse_mesh_backend_mm_iot.c")
+        message(FATAL_ERROR
+            "EdgeZ mesh mode requires the EdgeZ Hostap mesh backend")
+    endif()
+    list(APPEND SRCS
+        ${ROOT_DIR}/morse_mesh_backend_mm_iot.c
+        ${ROOT_DIR}/src/crypto/aes-ccm.c
+        ${ROOT_DIR}/src/crypto/aes-ctr.c
+        ${ROOT_DIR}/src/crypto/aes-siv.c
+        ${ROOT_DIR}/wpa_supplicant/mesh.c
+        ${ROOT_DIR}/wpa_supplicant/mesh_mpm.c
+        ${ROOT_DIR}/wpa_supplicant/mesh_rsn.c
     )
 endif()
 
@@ -138,14 +239,34 @@ set(BUILD_DEFINES
     MM_IOT_DPP_HEADER=1
 )
 
-if(CONFIG_HALOW_AP_MODE)
+if(CONFIG_HALOW_AP_MODE OR CONFIG_HALOW_MESH_MODE)
     list(APPEND BUILD_DEFINES
         CONFIG_AP=1
         NEED_AP_MLME=1
     )
 endif()
 
+if(CONFIG_HALOW_MESH_MODE)
+    list(APPEND BUILD_DEFINES CONFIG_MESH=1)
+endif()
+
+if(CONFIG_HALOW_MESH_MODE AND TARGET edgez_halow_mesh_platform)
+    # Hostap and the public Morse Hostap adapter are part of the protected
+    # EdgeZ ESP32-P4 platform archive. Preserve mmhostap as a real archive
+    # target because morselib merges $<TARGET_FILE:mmhostap> into libmorse.
+    add_library(mmhostap STATIC IMPORTED GLOBAL)
+    set_target_properties(mmhostap PROPERTIES
+        IMPORTED_LOCATION "${EDGEZ_HALOW_MESH_PLATFORM_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${INC}"
+        INTERFACE_COMPILE_DEFINITIONS "${BUILD_DEFINES}"
+        INTERFACE_LINK_LIBRARIES "mmutils;idf::mbedtls"
+    )
+    add_library(edgez_hostap ALIAS mmhostap)
+    return()
+endif()
+
 add_library(mmhostap STATIC ${SRCS})
+add_library(edgez_hostap ALIAS mmhostap)
 target_include_directories(mmhostap PUBLIC ${INC})
 target_compile_definitions(mmhostap PUBLIC ${BUILD_DEFINES})
 target_compile_options(mmhostap PRIVATE "-Wno-c++-compat")

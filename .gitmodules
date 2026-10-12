@@ -1,6 +1,13 @@
 [submodule "halow/components/mm-iot-sdk"]
 	path = halow/components/mm-iot-sdk
-	url = ../mm-iot-sdk.git
+	url = https://github.com/edgez-ai/mm-iot-sdk.git
+	branch = edgez
 [submodule "halow/components/firmware/morse-firmware"]
 	path = halow/components/firmware/morse-firmware
 	url = https://github.com/MorseMicro/morse-firmware
+[submodule "halow/components/edgez-rf-morsemicro"]
+	path = halow/components/edgez-rf-morsemicro
+	url = git@github.com:edgez-ai/edgez-rf-morsemicro.git
+[submodule "halow/components/edgez-rf-api"]
+	path = halow/components/edgez-rf-api
+	url = git@github.com:edgez-ai/edgez-rf-api.git

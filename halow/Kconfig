@@ -5,6 +5,7 @@ rsource "components/firmware/Kconfig"
 rsource "components/mmpktmem/Kconfig"
 rsource "components/shims/Kconfig"
 rsource "components/regdb/Kconfig"
+rsource "components/edgez-halow-mesh-prebuilt/Kconfig"
 
 menu "Wi-Fi HaLow Connection Manager"
 
@@ -20,6 +21,7 @@ menu "Wi-Fi HaLow Connection Manager"
 	config HALOW_PS_MODE
 		bool "Enable Morse Micro HaLow Powersave Mode"
 		default true
+		depends on HALOW_TRANSPORT_SPI
 		depends on MM_WAKE >= 0
 		depends on MM_BUSY >= 0
 		help

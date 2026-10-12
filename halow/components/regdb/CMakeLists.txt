@@ -4,7 +4,8 @@
 set(ROOT_DIR ${MM_IOT_SDK}/framework/src/mmregdb)
 
 set(inc
-    ${ROOT_DIR})
+    ${ROOT_DIR}
+    ${MM_IOT_SDK}/framework/morselib/include)
 set(src
     ${ROOT_DIR}/mmregdb.c
 )
@@ -20,5 +21,10 @@ else()
 endif()
 
 target_include_directories(regdb PUBLIC ${inc})
-add_dependencies(regdb shims morselib)
-target_link_libraries(regdb PUBLIC shims morselib)
+if(EDGEZ_RF_ONLY_MODE)
+  add_dependencies(regdb shims)
+  target_link_libraries(regdb PUBLIC shims)
+else()
+  add_dependencies(regdb shims morselib)
+  target_link_libraries(regdb PUBLIC shims morselib)
+endif()
