@@ -50,14 +50,24 @@ else()
     # are intentionally available only through the explicit source override.
     set(EDGEZ_HALOW_MESH_PREBUILT_ROOT
         ${CMAKE_CURRENT_LIST_DIR}/components/edgez-halow-mesh-prebuilt)
+    if(IDF_TARGET STREQUAL "esp32s3")
+        set(EDGEZ_HALOW_MESH_PREBUILT_LIB_DIR
+            ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/lib/esp32s3)
+    elseif(IDF_TARGET STREQUAL "esp32p4")
+        set(EDGEZ_HALOW_MESH_PREBUILT_LIB_DIR
+            ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/lib/esp32p4)
+    else()
+        message(FATAL_ERROR
+            "The EdgeZ ESP prebuilt supports esp32p4 and esp32s3, not ${IDF_TARGET}")
+    endif()
     set(EDGEZ_HALOW_MESH_PREBUILT_LIBRARY
-        ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/lib/libedgez_halow_mesh.a)
+        ${EDGEZ_HALOW_MESH_PREBUILT_LIB_DIR}/libedgez_halow_mesh.a)
     set(EDGEZ_HALOW_MESH_PLATFORM_LIBRARY
-        ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/lib/libedgez_halow_mesh_platform.a)
+        ${EDGEZ_HALOW_MESH_PREBUILT_LIB_DIR}/libedgez_halow_mesh_platform.a)
     if(NOT EXISTS "${EDGEZ_HALOW_MESH_PREBUILT_LIBRARY}" OR
        NOT EXISTS "${EDGEZ_HALOW_MESH_PLATFORM_LIBRARY}")
         message(FATAL_ERROR
-            "Missing EdgeZ ESP32-P4 prebuilt libraries under: ${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/lib")
+            "Missing EdgeZ ${IDF_TARGET} prebuilt libraries under: ${EDGEZ_HALOW_MESH_PREBUILT_LIB_DIR}")
     endif()
     set(MM_IOT_EDGEZ_INCLUDE_DIRS
         "${EDGEZ_HALOW_MESH_PREBUILT_ROOT}/include"
@@ -135,9 +145,12 @@ idf_component_register(
 	${priv_reqs}
 )
 
-if(EDGEZ_HALOW_MESH_SOURCE_BUILD)
+if(CONFIG_HALOW_MESH_MODE)
     idf_build_set_property(LINK_OPTIONS
         "-Wl,--allow-multiple-definition" APPEND)
+endif()
+
+if(EDGEZ_HALOW_MESH_SOURCE_BUILD)
     target_compile_definitions(${COMPONENT_TARGET} PRIVATE
         EDGEZ_MORSE_PUBLIC_ADAPTER=1
         EDGEZ_FULL_HOSTAP_RUNTIME=1
