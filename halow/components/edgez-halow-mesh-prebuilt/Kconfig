@@ -72,14 +72,29 @@ menu "EdgeZ HaLow mesh"
 
     if HALOW_MESH_MODE
 
+        config HALOW_PRIVATE_MESH_TASK_STACK_SIZE
+            int "Private mesh runtime task stack size"
+            range 4096 16384
+            default 8192
+            help
+                Stack used by the private UMAC runtime. Secure SAE/AMPE
+                processing performs elliptic-curve operations on this task,
+                so 4 KiB is insufficient on ESP32-P4 and can trigger the
+                FreeRTOS stack-protection fault during peering.
+
         config HALOW_MESH_PREQ_INTERVAL_MS
             int "Proactive HWMP PREQ interval (milliseconds, 0 disables)"
             range 0 600000
             default 4000
 
         config HALOW_MESH_DEBUG_LOG
-            bool "Enable verbose mesh trace logging"
+            bool "Enable targeted mesh diagnostic logging"
             default n
+            help
+                Emit INFO-level lifecycle diagnostics for peer discovery,
+                SAE/AMPE/MPM exchanges, management-frame transmission, and
+                failures. Per-frame RX and beacon traces remain disabled to
+                avoid flooding the application log.
 
         config HALOW_EDGEZ_PRIVATE_PEERING_AUTHORITY
             bool "Let the private EdgeZ FSM own secure mesh peering decisions"

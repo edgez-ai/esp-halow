@@ -64,6 +64,14 @@ bool edgez_mesh_receive_ethernet(const uint8_t *frame, size_t frame_len,
 /** Start the ESP-IDF BATMAN-IV worker on the already initialized HaLow radio. */
 esp_err_t edgez_mesh_init(uint32_t originator_interval_ms);
 
+/** Flush pending packets and reset all learned BATMAN routes while pausing the
+ * data plane. This provides a clean boundary while the radio peer table is
+ * replaced during a mesh-profile change. */
+esp_err_t edgez_mesh_reset_and_pause(void);
+
+/** Resume a BATMAN data plane paused by edgez_mesh_reset_and_pause(). */
+esp_err_t edgez_mesh_resume(void);
+
 /** Advertise this node as an Internet gateway in its BATMAN OGMs. */
 void edgez_mesh_set_gateway(bool available);
 
