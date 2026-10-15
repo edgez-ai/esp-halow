@@ -33,6 +33,10 @@ typedef struct {
     esp_err_t (*transmit_ethernet)(void *ctx, const uint8_t *frame,
                                   size_t frame_len, const uint8_t receiver[6],
                                   uint8_t tid, uint32_t timeout_ms);
+    /** Optional direct, connectionless vendor-action transport. Used only
+     * when BATMAN has no authorized route to an in-range destination. */
+    esp_err_t (*transmit_pawr)(void *ctx, const uint8_t destination[6],
+                              const uint8_t *frame, size_t frame_len);
     void (*note_traffic)(void *ctx);
     bool (*snapshot_rf_metrics)(void *ctx, edgez_mesh_rf_metrics_t *metrics);
 } edgez_mesh_transport_ops_t;
@@ -60,6 +64,11 @@ esp_err_t edgez_mesh_set_transport(const edgez_mesh_transport_ops_t *ops,
 /** Inject a decoded Ethernet frame received by the selected private UMAC. */
 bool edgez_mesh_receive_ethernet(const uint8_t *frame, size_t frame_len,
                                  const uint8_t transmitter[6]);
+
+/** Inject a direct Ethernet frame received through the connectionless PAwR
+ * fallback. Delivery occurs in mesh-worker context. */
+bool edgez_mesh_receive_pawr(const uint8_t *frame, size_t frame_len,
+                             const uint8_t transmitter[6]);
 
 /** Start the ESP-IDF BATMAN-IV worker on the already initialized HaLow radio. */
 esp_err_t edgez_mesh_init(uint32_t originator_interval_ms);
