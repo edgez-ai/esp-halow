@@ -72,6 +72,11 @@ typedef void (*edgez_halow_mesh_packet_receive_cb_t)(const uint8_t *payload,
                                                       size_t length,
                                                       void *arg);
 
+/** Receives a decoded PAwR Beacon payload after the service has acknowledged it. */
+typedef void (*edgez_halow_pawr_beacon_receive_cb_t)(
+    const uint8_t source_mac[6], const uint8_t *payload, size_t length,
+    int16_t rssi_dbm, void *arg);
+
 /**
  * Initialize and start a fixed-channel 802.11s HaLow service.
  *
@@ -106,6 +111,16 @@ esp_err_t edgez_halow_mesh_packet_transport_start(const uint8_t local_mac[6]);
 /** Register or clear the consumer for complete application packets. */
 void edgez_halow_mesh_packet_register_receive_cb(
     edgez_halow_mesh_packet_receive_cb_t callback, void *arg);
+
+/**
+ * Register or clear the consumer for connectionless PAwR Beacon requests.
+ *
+ * The mesh service sends the PAwR acknowledgement before invoking the
+ * callback, allowing a sleepy sender to turn off its HaLow radio without
+ * waiting for application forwarding.
+ */
+void edgez_halow_mesh_register_pawr_beacon_cb(
+    edgez_halow_pawr_beacon_receive_cb_t callback, void *arg);
 
 /**
  * Send an opaque application packet through the BATMAN data plane.
