@@ -122,6 +122,11 @@ void edgez_halow_mesh_packet_register_receive_cb(
 void edgez_halow_mesh_register_pawr_beacon_cb(
     edgez_halow_pawr_beacon_receive_cb_t callback, void *arg);
 
+/** Send application PAwR control data in an unpeered Public Action frame. */
+esp_err_t edgez_halow_mesh_transmit_pawr_control(
+    const uint8_t destination[6], const uint8_t *payload,
+    size_t payload_length);
+
 /**
  * Send an opaque application packet through the BATMAN data plane.
  *

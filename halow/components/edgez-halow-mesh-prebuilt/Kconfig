@@ -3,6 +3,16 @@
 
 menu "EdgeZ HaLow mesh"
 
+    config EDGEZ_PAWR_BULK_RING_CAPACITY
+        int "PAwR bulk sender ring-buffer capacity (bytes)"
+        range 4096 65536
+        default 16384
+        help
+            Maximum amount of unacknowledged source data retained by the
+            reliable PAwR bulk sender. Producers receive backpressure when
+            this bounded buffer is full. Confirmed windows are released and
+            reused, so transfers may be larger than this value.
+
     choice HALOW_TRANSPORT
         prompt "Morse Micro transport"
         default HALOW_TRANSPORT_SPI
