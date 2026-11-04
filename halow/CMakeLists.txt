@@ -38,7 +38,11 @@ if(DEFINED ENV{EDGEZ_HALOW_MESH_SOURCE_ROOT} AND
     set(EDGEZ_HOSTAP_ROOT "${MM_IOT_EDGEZ_MM_IOT_HOSTAP_DIR}")
     list(APPEND src
         ${MM_IOT_EDGEZ_COMMON_SOURCES}
-        ${MM_IOT_EDGEZ_ESP_IDF_SOURCES})
+        ${MM_IOT_EDGEZ_ESP_IDF_SOURCES}
+        # Source builds force EDGEZ_DIAGNOSTICS_ENABLED below, including the
+        # wake-test profile with CONFIG_HALOW_MESH_DEBUG_LOG disabled.
+        "${EDGEZ_HALOW_MESH_SOURCE_ROOT}/common/src/edgez_diagnostics.c")
+    list(REMOVE_DUPLICATES src)
     list(APPEND inc
         ${MM_IOT_EDGEZ_INCLUDE_DIRS}
         ${EDGEZ_RF_API_INCLUDE_DIRS})
